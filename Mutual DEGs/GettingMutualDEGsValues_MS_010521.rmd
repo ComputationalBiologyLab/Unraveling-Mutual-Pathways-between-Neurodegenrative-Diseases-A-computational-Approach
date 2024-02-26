@@ -1,0 +1,86 @@
+
+
+
+#getting mutual DEGs only from DEGs list
+```{r}
+#retrieve the list file
+List_file <- read.csv("Mutualslfc0.csv", header=T, check.names=FALSE, row.names=1)
+List_of_genes <- rownames(List_file)
+ADDEGs <- read.csv("ADDEGslfc0.csv", header=T, check.names=FALSE, row.names=1)
+
+
+
+DF <- data.frame()
+for (Gene in List_of_genes){
+  if (Gene %in% rownames(ADDEGs)){
+    DF <- rbind(DF, ADDEGs[which(rownames(ADDEGs)==Gene), ])
+  }
+}
+
+write.csv(DF, file = "MutualsFromAD.csv")
+
+```
+
+
+
+
+
+#getting mutual DEGs only from DEGs list
+```{r}
+
+PDDEGs <- read.csv("PDDEGslfc0_V2.csv", header=T, check.names=FALSE, row.names=1)
+
+
+
+PDDF <- data.frame()
+for (Gene in List_of_genes){
+  if (Gene %in% rownames(PDDEGs)){
+    PDDF <- rbind(PDDF, PDDEGs[which(rownames(PDDEGs)==Gene), ])
+  }
+}
+
+write.csv(PDDF, file = "MutualsFromPD.csv")
+
+```
+
+
+
+#getting mutual DEGs only from DEGs list
+```{r}
+
+HDDEGs <- read.csv("HDDEGslfc0_V2.csv", header=T, check.names=FALSE, row.names=1)
+
+
+
+HDDF <- data.frame()
+for (Gene in List_of_genes){
+  if (Gene %in% rownames(HDDEGs)){
+    HDDF <- rbind(HDDF, HDDEGs[which(rownames(HDDEGs)==Gene), ])
+  }
+}
+
+write.csv(HDDF, file = "MutualsFromHD.csv")
+
+```
+
+
+
+#getting mutual DEGs only from DEGs list
+```{r}
+
+DFF <- cbind(DF, PDDF, HDDF)
+
+
+
+write.csv(DFF, file = "MutualsValuesAll.csv")
+
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,88 @@
+################################################################################
+#                             drug repurposing                                 #
+################################################################################
+# set
+rm(list = ls())
+gc()
+pacman::p_load(tidyverse, ggh4x, doMC)
+theme_set(theme_minimal() +
+            theme(axis.line = element_line(colour = "black", linewidth = 0.5), 
+                  axis.text = element_text(face = "bold"), 
+                  axis.text.y = element_text(size = 8),
+                  axis.text.x = element_text(angle = 90, hjust = 1, size = 8, vjust = 0.5),
+                  axis.ticks = element_blank(), 
+                  axis.title = element_text(face = "bold"), 
+                  strip.text = element_text(face = "bold"),
+                  strip.switch.pad.grid = unit(0, "points"),
+                  strip.placement = "outside", 
+                  panel.spacing = unit(1, "points"), 
+                  panel.grid = element_blank(),
+                  legend.position = "bottom", 
+                  # legend.title = element_blank(), 
+                  legend.text = element_text(face = "bold", size = 5),
+                  plot.title = element_text(size = 10),
+                  plot.subtitle = element_text(size = 8),
+                  title = element_text(face = "bold", size = 10),
+                  plot.caption = element_text(hjust = 0)
+            ))
+my.guides <- guides(fill = guide_colorbar(barwidth = 6, barheight = 0.5))
+pload <- function(fname,envir=.GlobalEnv){
+  con <- pipe(paste("/opt/homebrew/bin/pixz -d <",fname),"rb")
+  load(con,envir=envir); close(con)
+}
+psave <- function(...,file){  
+  con = pipe(paste("/opt/homebrew/bin/pixz -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
+  save(...,file=con,envir=.GlobalEnv); close(con) 
+} 
+redblack.col <- c("#800000", "black")
+################################################################################
+project.dir <- "/Volumes/Mac/ZC/GP-paper/Transcriptome-Analysis-for-Three-Neurodegenerative-Diseases-AD-PD-and-HD/"
+setwd(project.dir)
+################################################################################
+# read the CMAP signature, and keep FDA-approed drugs only
+fda <- read_delim("../../FDA_approved_Products.txt") %>%
+  mutate(DrugName = sub(" ", "-", tolower(DrugName)),
+         ActiveIngredient = sub(" ", "-", tolower(ActiveIngredient)))
+# full CMAP matrix with rows as drug/molecule names and genes as colnames
+pload("../../cp_mean_coeff_mat_tsv.Rdata.pxz")
+genes.of.int <- c("NFKB1", "NFKBIA", "RELA", "TRIM4", "SMAD4")
+# filter the CMAP data to only keep the FDA approved drugs, and the genes of interest
+fda.mdrug <- mdrug[c(tolower(rownames(mdrug)) %in% tolower(fda$DrugName)|
+                       tolower(rownames(mdrug)) %in% tolower(fda$ActiveIngredient)),
+                   colnames(mdrug)%in%genes.of.int] %>%
+  as.data.frame()
+# save fda drug matrix
+psave(fda.mdrug, file = "../../cp_mean_coeff_mat_tsv_FDA-genes-of-int-only.Rdata.pxz")
+gc()
+################################################################################
+# identify drugs that can downregulate all genes of interest
+fda.mdrug.filtered <- fda.mdrug %>%
+  as.data.frame() %>%
+  rownames_to_column("Drug") %>%
+  mutate(all_down = ifelse(NFKB1 < 0 & NFKBIA < 0 & RELA < 0 & SMAD4 < 0, T, F)) %>%
+  filter(all_down == T) %>%
+  mutate(Drug = str_to_sentence(Drug))
+# save the table
+write_csv(fda.mdrug.filtered, file = "Mutual DEGs/top-drugs-downregulating-genes-of-int.csv")
+################################################################################
+# make a heatmap for drugs that can downregulate all genes of interest at the same time
+# keep drugs of interest 
+d.of.int <- readxl::read_xlsx("Mutual DEGs/tagged_top-drugs-downregulating-genes-of-int.xlsx", sheet = 1) %>%
+  mutate(keep = ifelse(keep == "T", T, F)) %>%
+  filter(keep == T)
+
+fda.mdrug.filtered %>%
+  filter(Drug %in% d.of.int$Drug) %>%
+  pivot_longer(cols = genes.of.int[c(1:3,5)], names_to = "Gene") %>%
+  ggplot(aes(x = Gene, y= Drug, fill = value)) +
+  geom_tile()+
+  scale_fill_gradient2(low = "#3b5998", high = redblack.col[1],
+                       name = "Gene Expression")+
+  my.guides +
+  theme(axis.text.x.bottom = element_text(angle = 0, hjust = 0.5))
+
+ggsave("Mutual DEGs/Visualization/gens-exp-of-genes-of-int-in-drug-hits.svg",
+       width = 5, height = 6, units = "in", dpi = 360, bg = "white")
+################################################################################
+
+

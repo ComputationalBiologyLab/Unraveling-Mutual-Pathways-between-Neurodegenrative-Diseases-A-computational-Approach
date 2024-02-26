@@ -1,0 +1,161 @@
+---
+title: "Pheatmap for mutual DEGs"
+Author: "Muhammad Elsadany"
+---
+
+## AD data retrieval 
+```{r}
+#retrieve the counts and list of DEGs files
+DEGs_file <- read.csv("MutualDEGs.csv", header=T, check.names=FALSE, row.names=1)
+List_of_genes <- rownames(DEGs_file)
+AD.counts <- read.csv("AD_Counts_2.csv", header=T, check.names=FALSE, row.names=1)
+
+
+
+AD.DF <- data.frame()
+for (Gene in List_of_genes){
+  if (Gene %in% rownames(AD.counts)){
+    AD.DF <- rbind(AD.DF, AD.counts[which(rownames(AD.counts)==Gene), ])
+  }
+}
+
+
+write.csv(AD.DF, file = "MutualsFromAD.csv")
+AD.Samples.DF <- AD.DF[,1:12]
+write.csv(AD.Samples.DF, file = "MutualsFromADSamplesOnly.csv")
+AD.Control.Df <- AD.DF[,13:22]
+
+```
+
+
+
+## PD data retrieval 
+```{r}
+#retrieve the counts and list of DEGs files
+PD.counts <- read.csv("PDData_converted_aggregated.csv", header=T, check.names=FALSE, row.names=1)
+
+
+PD.DF <- data.frame()
+for (Gene in List_of_genes){
+  if (Gene %in% rownames(PD.counts)){
+    PD.DF <- rbind(PD.DF, PD.counts[which(rownames(PD.counts)==Gene), ])
+  }
+}
+
+
+write.csv(PD.DF, file = "MutualsFromPD.csv")
+PD.Samples.DF <- PD.DF[,45:73]
+write.csv(PD.Samples.DF, file = "MutualsFromPDSamplesOnly.csv")
+PD.Control.DF <- PD.DF[,1:44]
+
+```
+
+
+
+## HD data retrieval 
+```{r}
+#retrieve the counts and list of DEGs files
+HD.counts <- read.csv("HDData_converted_aggregated.csv", header=T, check.names=FALSE, row.names=1)
+
+
+HD.DF <- data.frame()
+for (Gene in List_of_genes){
+  if (Gene %in% rownames(HD.counts)){
+    HD.DF <- rbind(HD.DF, HD.counts[which(rownames(HD.counts)==Gene), ])
+  }
+}
+
+
+write.csv(HD.DF, file = "MutualsFromHD.csv")
+HD.Samples.DF <- HD.DF[,50:69]
+write.csv(HD.Samples.DF, file = "MutualsFromHDSamplesOnly.csv")
+HD.Control.DF <- HD.DF[,1:49]
+
+```
+
+
+
+## Gathering counts of DEGs from all diseases
+```{r}
+
+
+All.DF <- cbind(AD.Samples.DF, PD.Samples.DF, HD.Samples.DF)
+
+All.meta <- data.frame(colnames(All.DF), row.names = colnames(All.DF))
+All.meta[1:12,1] <- "AD"
+All.meta[13:41,1] <- "PD"
+All.meta[42:61,1] <- "HD"
+colnames(All.meta) <- c("SampleType")
+
+Annotation <- All.meta
+
+library(pheatmap)
+library(RColorBrewer)
+### Set a color palette
+heat_colors <- brewer.pal(4, "YlOrRd")
+
+
+pheatmap(All.DF,
+         color = heat_colors, 
+         cluster_rows = T, 
+         cluster_cols = F,
+         show_rownames = T,
+         annotation = Annotation, 
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         fontsize_row = 6, 
+         height = 400)
+
+
+```
+
+## Gathering counts of DEGs from all diseases
+```{r}
+
+
+All.DF.2 <- cbind(AD.Samples.DF, PD.Samples.DF, HD.Samples.DF, AD.Control.Df, PD.Control.DF)
+
+All.meta.2 <- data.frame(colnames(All.DF.2), row.names = colnames(All.DF.2))
+All.meta.2[1:12,1] <- "AD"
+All.meta.2[13:41,1] <- "PD"
+All.meta.2[42:61,1] <- "HD"
+All.meta.2[62:115,1] <- "Control"
+colnames(All.meta.2) <- c("SampleType")
+
+Annotation.2 <- All.meta.2
+
+library(pheatmap)
+library(RColorBrewer)
+### Set a color palette
+heat_colors <- brewer.pal(4, "YlOrRd")
+
+jpeg(file = "MutualDEGsHeatmap.jpeg")
+pheatmap(All.DF.2,
+         color = heat_colors, 
+         cluster_rows = T, 
+         cluster_cols = F,
+         show_rownames = T,
+         annotation = Annotation.2, 
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         fontsize_row = 6, 
+         height = 400)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
